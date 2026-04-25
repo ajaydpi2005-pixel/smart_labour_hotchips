@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Environment secrets — NEVER commit these
+.env
+google-service-account.json
+
+# SQLite database (Railway uses a persistent volume)
+billing.db
+
+# Generated PDF bills
+public/*.pdf
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db

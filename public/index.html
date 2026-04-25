@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAI KRISHNA HOT CHIPS</title>
+    <meta name="description" content="Real-time billing and sales management for SAI KRISHNA HOT CHIPS.">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+
+        <!-- ── Header ── -->
+        <div class="header">
+            <h1>🌶️ SAI KRISHNA</h1>
+            <div class="shop-info">
+                <span id="shopNameDisplay" class="shop-name"></span>
+                <span id="headerGrandTotal" class="header-grand-total">₹0</span>
+                <button id="logoutBtn" class="btn-logout">Logout</button>
+            </div>
+        </div>
+
+        <!-- ── Amount Input ── -->
+        <div class="section" id="amountSection">
+            <h2>New Order</h2>
+            <input type="number" id="amountInput" placeholder="Enter amount (₹)" min="0" step="0.01" inputmode="decimal">
+            <button id="okBtn" class="btn btn-primary">Confirm Amount →</button>
+        </div>
+
+        <!-- ── Bill Details ── -->
+        <div class="section hidden" id="cartSection">
+            <h2>Bill Details</h2>
+            <div class="bill-info">
+                <p>
+                    <strong>Order Amount</strong>
+                    <span>₹<span id="displayAmount">0</span></span>
+                </p>
+                <p>
+                    <strong>Order No.</strong>
+                    <span>#<span id="orderNumber">0</span></span>
+                </p>
+                <p>
+                    <strong>Total Till Now</strong>
+                    <span>₹<span id="runningTotal">0</span></span>
+                </p>
+            </div>
+
+            <div class="payment-buttons">
+                <button id="cashBtn" class="btn btn-cash">💵 Pay with Cash</button>
+                <button id="gpayBtn" class="btn btn-gpay">📱 Pay with GPay</button>
+            </div>
+
+            <div class="action-buttons">
+                <button id="newOrderBtn" class="btn btn-secondary">➕ New Order</button>
+            </div>
+        </div>
+
+        <!-- ── Today's Stats ── -->
+        <div class="section" id="statsSection">
+            <h2>Today's Stats</h2>
+            <div class="stat-row">
+                <div class="stat-pill gold">
+                    <div class="stat-label">Grand Total</div>
+                    <div class="stat-value" id="statTotal">₹0</div>
+                </div>
+                <div class="stat-pill">
+                    <div class="stat-label">Total Orders</div>
+                    <div class="stat-value" id="statCount">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- ── Recent Orders ── -->
+        <div class="section" id="recentOrdersSection">
+            <h2>Recent Orders</h2>
+            <div id="recentOrdersList" class="recent-orders-list">
+                <p class="no-orders">No orders yet today</p>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- ── Sales Reports ── -->
+        <div class="section" id="salesReportSection">
+            <h2>Reports</h2>
+            <div class="report-buttons">
+                <button id="dayReportBtn" class="btn btn-primary">📅 Day Report</button>
+                <button id="monthReportBtn" class="btn btn-secondary">📆 Monthly</button>
+            </div>
+            <div id="reportStatus" class="report-status"></div>
+        </div>
+
+    </div>
+
+    <!-- ── Payment Confirmation Modal ── -->
+    <div id="confirmModal" class="modal hidden" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3>Confirm Payment</h3>
+            <p>Confirm this transaction?</p>
+            <p><strong>Amount: </strong>₹<span id="confirmAmount">0</span></p>
+            <p><strong>Method: </strong><span id="confirmMethod">Cash</span></p>
+            <div class="modal-buttons">
+                <button id="confirmYes" class="btn btn-primary">✓ Confirm</button>
+                <button id="confirmNo" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Report Password Modal ── -->
+    <div id="reportAuthModal" class="modal hidden" onclick="closeReportModal()">
+        <div class="modal-content report-auth-modal" onclick="event.stopPropagation()">
+            <div class="report-auth-icon">🔐</div>
+            <h3 id="reportAuthTitle">Confirm Identity</h3>
+            <p id="reportAuthDesc">Enter your shop password to send the report.</p>
+
+            <div class="report-auth-input-wrap">
+                <input type="password" id="reportAuthPassword"
+                       placeholder="Enter your password"
+                       autocomplete="current-password">
+                <div id="reportAuthError" class="report-auth-error hidden">
+                    ❌ Incorrect password. Please try again.
+                </div>
+            </div>
+
+            <div class="modal-buttons">
+                <button id="reportAuthConfirm" class="btn btn-primary">Send Report →</button>
+                <button class="btn btn-secondary" onclick="closeReportModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Toast Message ── -->
+    <div id="message" class="message"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+

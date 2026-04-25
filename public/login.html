@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAI KRISHNA HOT CHIPS - Login</title>
+    <meta name="description" content="Secure login for SAI KRISHNA HOT CHIPS billing system.">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container login-container">
+
+        <div class="login-brand">
+            <span class="brand-icon">🌶️</span>
+            <h1>SAI KRISHNA<br>HOT CHIPS</h1>
+            <p>Billing & Sales Management</p>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="shopSelect">Select Shop</label>
+                <select id="shopSelect" required>
+                    <option value="">— Choose your branch —</option>
+                    <option value="Araku Valley">Araku Valley</option>
+                    <option value="Chintapallee">Chintapallee</option>
+                    <option value="Paderu">Paderu</option>
+                    <option value="Semiliguda">Semiliguda</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="passwordInput">Password</label>
+                <input type="password" id="passwordInput" placeholder="Enter your password" required autocomplete="current-password">
+            </div>
+
+            <button type="submit" id="loginBtn" class="btn btn-primary">Sign In →</button>
+        </form>
+
+        <div id="message" class="message"></div>
+    </div>
+
+    <script src="login.js"></script>
+</body>
+</html>
