@@ -292,6 +292,14 @@ function getOrdinalSuffix(n) {
     return s[(v - 20) % 10] || s[v] || s[0];
 }
 
+function getISTDateStr() {
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+}
+
+function getISTMonthStr() {
+    return getISTDateStr().slice(0, 7);
+}
+
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
 // Serve login.html as default
@@ -321,10 +329,10 @@ app.post('/api/logout', (req, res) => {
 
 // Get summary
 app.get('/api/summary', authenticate, (req, res) => {
-    const today  = new Date().toISOString().split('T')[0];
+    const today  = getISTDateStr();
     const shopId = req.shopId;
     db.get(
-        'SELECT SUM(amount) as total, COUNT(*) as count FROM orders WHERE DATE(timestamp) = ? AND shop_id = ?',
+        'SELECT SUM(amount) as total, COUNT(*) as count FROM orders WHERE DATE(timestamp, \'+5 hours\', \'+30 minutes\') = ? AND shop_id = ?',
         [today, shopId],
         (err, row) => {
             if (err) return res.status(500).json({ error: err.message });
@@ -338,10 +346,10 @@ app.post('/api/order', authenticate, (req, res) => {
     const { amount, paymentMethod } = req.body;
     const shopId   = req.shopId;
     const shopName = req.shopName;
-    const today    = new Date().toISOString().split('T')[0];
+    const today    = getISTDateStr();
 
     db.get(
-        'SELECT COUNT(*) as count, SUM(amount) as total FROM orders WHERE DATE(timestamp) = ? AND shop_id = ?',
+        'SELECT COUNT(*) as count, SUM(amount) as total FROM orders WHERE DATE(timestamp, \'+5 hours\', \'+30 minutes\') = ? AND shop_id = ?',
         [today, shopId],
         (err, row) => {
             if (err) return res.status(500).json({ error: err.message });
@@ -358,7 +366,7 @@ app.post('/api/order', authenticate, (req, res) => {
                     const orderId = this.lastID;
 
                     db.all(
-                        'SELECT payment_method, COUNT(*) as count, SUM(amount) as total FROM orders WHERE DATE(timestamp) = ? AND shop_id = ? GROUP BY payment_method',
+                        'SELECT payment_method, COUNT(*) as count, SUM(amount) as total FROM orders WHERE DATE(timestamp, \'+5 hours\', \'+30 minutes\') = ? AND shop_id = ? GROUP BY payment_method',
                         [today, shopId],
                         async (err, rows) => {
                             const cashCount = rows?.find(r => r.payment_method === 'Cash')?.count || 0;
@@ -407,9 +415,9 @@ app.post('/api/send-telegram', async (req, res) => {
 // Recent orders
 app.get('/api/recent-orders', authenticate, (req, res) => {
     const shopId = req.shopId;
-    const today  = new Date().toISOString().split('T')[0];
+    const today  = getISTDateStr();
     db.all(
-        'SELECT * FROM orders WHERE shop_id = ? AND DATE(timestamp) = ? ORDER BY timestamp DESC LIMIT 10',
+        'SELECT * FROM orders WHERE shop_id = ? AND DATE(timestamp, \'+5 hours\', \'+30 minutes\') = ? ORDER BY timestamp DESC LIMIT 10',
         [shopId, today],
         (err, rows) => {
             if (err) return res.status(500).json({ error: err.message });
@@ -421,7 +429,7 @@ app.get('/api/recent-orders', authenticate, (req, res) => {
 // Generate PDF bill
 app.get('/api/bill/:date', async (req, res) => {
     const date = req.params.date;
-    db.all('SELECT * FROM orders WHERE DATE(timestamp) = ? ORDER BY timestamp', [date], async (err, rows) => {
+    db.all('SELECT * FROM orders WHERE DATE(timestamp, \'+5 hours\', \'+30 minutes\') = ? ORDER BY timestamp', [date], async (err, rows) => {
         if (err)          return res.status(500).json({ error: err.message });
         if (!rows.length) return res.status(404).json({ error: 'No orders found for this date' });
 
@@ -439,7 +447,7 @@ app.get('/api/bill/:date', async (req, res) => {
 
         let grandTotal = 0;
         rows.forEach(order => {
-            const time = new Date(order.timestamp).toLocaleTimeString('en-IN', {
+            const time = new Date(order.timestamp + 'Z').toLocaleTimeString('en-IN', {
                 hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata'
             });
             doc.text(`${order.order_number} | ₹${order.amount} | ${order.payment_method} | ${time}`);
@@ -459,7 +467,7 @@ app.get('/api/bill/:date', async (req, res) => {
 async function generateAndSendDailyBill(shop, date) {
     return new Promise((resolve, reject) => {
         db.all(
-            'SELECT * FROM orders WHERE shop_id = ? AND DATE(timestamp) = ? ORDER BY timestamp',
+            'SELECT * FROM orders WHERE shop_id = ? AND DATE(timestamp, \'+5 hours\', \'+30 minutes\') = ? ORDER BY timestamp',
             [shop.id, date],
             async (err, rows) => {
                 if (err) { console.error(err); return reject(err); }
@@ -473,7 +481,7 @@ async function generateAndSendDailyBill(shop, date) {
 
                 let orderDetails = '';
                 rows.forEach(order => {
-                    const time = new Date(order.timestamp).toLocaleTimeString('en-IN', {
+                    const time = new Date(order.timestamp + 'Z').toLocaleTimeString('en-IN', {
                         hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata'
                     });
                     orderDetails += `Order #${order.order_number} | ₹${order.amount} | ${order.payment_method} | ${time}\n`;
@@ -509,7 +517,7 @@ ${orderDetails}`;
 async function generateAndSendMonthlyBill(shop, month) {
     return new Promise((resolve, reject) => {
         db.all(
-            'SELECT * FROM orders WHERE shop_id = ? AND strftime("%Y-%m", timestamp) = ? ORDER BY timestamp',
+            'SELECT * FROM orders WHERE shop_id = ? AND strftime("%Y-%m", timestamp, \'+5 hours\', \'+30 minutes\') = ? ORDER BY timestamp',
             [shop.id, month],
             async (err, rows) => {
                 if (err) { console.error(err); return reject(err); }
@@ -547,7 +555,7 @@ async function generateAndSendMonthlyBill(shop, month) {
 
 // ─── Manual Trigger Endpoints ─────────────────────────────────────────────────
 app.post('/api/test-daily-report', async (req, res) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getISTDateStr();
     console.log(`Manual trigger: daily report for ${today}`);
     try {
         db.all('SELECT * FROM shops', async (err, shops) => {
@@ -564,7 +572,7 @@ app.post('/api/test-daily-report', async (req, res) => {
 });
 
 app.post('/api/test-monthly-report', async (req, res) => {
-    const month = new Date().toISOString().slice(0, 7);
+    const month = getISTMonthStr();
     console.log(`Manual trigger: monthly report for ${month}`);
     try {
         db.all('SELECT * FROM shops', async (err, shops) => {
@@ -586,7 +594,7 @@ app.post('/api/test-monthly-report', async (req, res) => {
 
 // Day report for the logged-in shop only
 app.post('/api/my-daily-report', authenticate, async (req, res) => {
-    const today    = new Date().toISOString().split('T')[0];
+    const today    = getISTDateStr();
     const shopId   = req.shopId;
     const shopName = req.shopName;
     console.log(`Manual trigger: daily report for shop "${shopName}" on ${today}`);
@@ -604,7 +612,7 @@ app.post('/api/my-daily-report', authenticate, async (req, res) => {
 
 // Monthly report for the logged-in shop only
 app.post('/api/my-monthly-report', authenticate, async (req, res) => {
-    const month    = new Date().toISOString().slice(0, 7);
+    const month    = getISTMonthStr();
     const shopId   = req.shopId;
     const shopName = req.shopName;
     console.log(`Manual trigger: monthly report for shop "${shopName}" in ${month}`);
@@ -624,7 +632,7 @@ app.post('/api/my-monthly-report', authenticate, async (req, res) => {
 // Deletes all orders for a given date so each new day starts fresh (order #1, ₹0)
 function resetDailyOrders(date) {
     return new Promise((resolve, reject) => {
-        db.run('DELETE FROM orders WHERE DATE(timestamp) = ?', [date], function (err) {
+        db.run('DELETE FROM orders WHERE DATE(timestamp, \'+5 hours\', \'+30 minutes\') = ?', [date], function (err) {
             if (err) {
                 console.error(`❌ Reset failed for ${date}:`, err.message);
                 return reject(err);
@@ -636,16 +644,18 @@ function resetDailyOrders(date) {
 }
 
 // ─── Cron Jobs ────────────────────────────────────────────────────────────────
-// Runs every night at 11 PM IST (17:30 UTC):
+// Runs every night at 11 PM IST:
 //   1. If last day of month → send monthly report via Telegram + write to "Monthly Reports" tab
 //   2. Send daily report for every shop via Telegram + append summary row to shop's own tab
 //   3. Delete today's orders so tomorrow starts at Order #1 / ₹0
-cron.schedule('30 17 * * *', async () => {
-    const now     = new Date();
-    const dateStr = now.toISOString().split('T')[0];
-    const month   = now.toISOString().slice(0, 7);
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const isLastDay = now.getDate() === lastDay;
+cron.schedule('0 23 * * *', async () => {
+    const dateStr = getISTDateStr();
+    const month   = getISTMonthStr();
+    
+    // Calculate if today is the last day of the month in IST
+    const todayObj  = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+    const lastDay   = new Date(todayObj.getFullYear(), todayObj.getMonth() + 1, 0).getDate();
+    const isLastDay = todayObj.getDate() === lastDay;
 
     console.log(`\n🕚 CRON 11 PM IST — ${dateStr} | Last day of month: ${isLastDay}`);
 
@@ -681,6 +691,8 @@ cron.schedule('30 17 * * *', async () => {
     } catch (err) {
         console.error('❌ CRON error:', err.message);
     }
+}, {
+    timezone: "Asia/Kolkata"
 });
 
 // ─── Start Server ───────────────────────────────────────────────────────────

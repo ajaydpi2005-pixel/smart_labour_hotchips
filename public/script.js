@@ -315,7 +315,7 @@ async function loadRecentOrders() {
         }
 
         recentOrdersList.innerHTML = orders.map(order => {
-            const time = new Date(order.timestamp).toLocaleTimeString('en-IN', {
+            const time = new Date(order.timestamp + 'Z').toLocaleTimeString('en-IN', {
                 hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata'
             });
             const isCash = order.payment_method === 'Cash';
